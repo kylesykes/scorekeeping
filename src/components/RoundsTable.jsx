@@ -9,6 +9,7 @@ export default function RoundsTable({
   onScore,
   onDeleteRound,
   onRemovePlayer,
+  onMovePlayer,
   deviceId,
 }) {
   // Local input state keyed by `${roundId}-${playerId}`
@@ -98,8 +99,31 @@ export default function RoundsTable({
                 </button>
                 {playerMenu === p.id && (
                   <div className={styles.playerDropdown}>
+                    <div className={styles.moveRow}>
+                      <button
+                        className={styles.moveBtn}
+                        disabled={players.indexOf(p) === 0}
+                        onClick={() => {
+                          onMovePlayer(p.id, -1);
+                          setPlayerMenu(null);
+                        }}
+                      >
+                        &larr;
+                      </button>
+                      <span className={styles.moveLabel}>Move</span>
+                      <button
+                        className={styles.moveBtn}
+                        disabled={players.indexOf(p) === players.length - 1}
+                        onClick={() => {
+                          onMovePlayer(p.id, 1);
+                          setPlayerMenu(null);
+                        }}
+                      >
+                        &rarr;
+                      </button>
+                    </div>
                     <button
-                      className={styles.playerDropdownItem}
+                      className={styles.playerDropdownDelete}
                       onClick={() => handleRemovePlayer(p.id)}
                     >
                       Remove player

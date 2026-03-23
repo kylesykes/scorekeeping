@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useIdentity } from "../hooks/useIdentity";
 import { useSession } from "../hooks/useSession";
@@ -41,6 +41,52 @@ export default function Game() {
       setSearchParams({}, { replace: true });
     }
   }, [searchParams, setSearchParams]);
+
+  // Player display order — persisted to localStorage per session
+  const orderKey = `tally_player_order_${code}`;
+  const [playerOrder, setPlayerOrder] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(orderKey)) ?? [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Sync order to localStorage
+  useEffect(() => {
+    if (playerOrder.length > 0) {
+      localStorage.setItem(orderKey, JSON.stringify(playerOrder));
+    }
+  }, [playerOrder, orderKey]);
+
+  // Ordered players: use saved order, append any new players at the end
+  const orderedPlayers = useMemo(() => {
+    if (playerOrder.length === 0) return players;
+    const byId = new Map(players.map((p) => [p.id, p]));
+    const ordered = playerOrder
+      .filter((id) => byId.has(id))
+      .map((id) => byId.get(id));
+    // Append players not in the saved order
+    const inOrder = new Set(playerOrder);
+    for (const p of players) {
+      if (!inOrder.has(p.id)) ordered.push(p);
+    }
+    return ordered;
+  }, [players, playerOrder]);
+
+  const handleMovePlayer = useCallback(
+    (playerId, direction) => {
+      const ids = orderedPlayers.map((p) => p.id);
+      const idx = ids.indexOf(playerId);
+      if (idx < 0) return;
+      const newIdx = idx + direction;
+      if (newIdx < 0 || newIdx >= ids.length) return;
+      const next = [...ids];
+      [next[idx], next[newIdx]] = [next[newIdx], next[idx]];
+      setPlayerOrder(next);
+    },
+    [orderedPlayers]
+  );
 
   const handleNewRound = async () => {
     await createRound();
@@ -105,13 +151,14 @@ export default function Game() {
         <Leaderboard players={ranked} totals={totals} rounds={rounds} />
       ) : (
         <RoundsTable
-          players={players}
+          players={orderedPlayers}
           rounds={rounds}
           scoresByRound={scoresByRound}
           totals={totals}
           onScore={upsertScore}
           onDeleteRound={deleteRound}
           onRemovePlayer={removePlayer}
+          onMovePlayer={handleMovePlayer}
           deviceId={deviceId}
         />
       )}
