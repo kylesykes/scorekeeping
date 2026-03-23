@@ -16,7 +16,7 @@ export default function Landing() {
   const handleStart = async () => {
     if (!name.trim()) return;
     const sess = await create({ playerName: name, deviceId });
-    if (sess) navigate(`/${sess.code}`);
+    if (sess) navigate(`/${sess.code}/game?new=1`);
   };
 
   // ---- Join via code ----
@@ -24,7 +24,7 @@ export default function Landing() {
     const code = codeChars.join("");
     if (code.length < 4 || !name.trim()) return;
     const sess = await join({ code, playerName: name, deviceId });
-    if (sess) navigate(`/${sess.code}`);
+    if (sess) navigate(`/${code.toUpperCase()}/game`);
   };
 
   // ---- Code input handling ----
