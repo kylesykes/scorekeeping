@@ -1,0 +1,75 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding: 1.5rem;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.25rem;
+}
+
+.gameName {
+  font-size: 1.125rem;
+  font-weight: 500;
+  margin: 0;
+  color: var(--color-text, #111);
+}
+
+.meta {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #888);
+  margin: 0.125rem 0 0;
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.headerBtn {
+  padding: 0.5rem 0.875rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border-radius: 8px;
+  border: 1px solid var(--color-border, #e0e0e0);
+  background: var(--color-bg, #fff);
+  color: var(--color-text-muted, #666);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* ---- Tabs ---- */
+
+.tabs {
+  display: flex;
+  background: var(--color-surface, #f5f5f5);
+  border-radius: 8px;
+  padding: 3px;
+  margin-bottom: 1.5rem;
+}
+
+.tab {
+  flex: 1;
+  text-align: center;
+  padding: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted, #888);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tabActive {
+  background: var(--color-bg, #fff);
+  color: var(--color-text, #111);
+  border: 1px solid var(--color-border, #e0e0e0);
+}
