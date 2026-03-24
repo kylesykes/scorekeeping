@@ -19,9 +19,15 @@
 }
 
 .label {
-  margin: 0 0 1.25rem;
+  margin: 0 0 1rem;
   font-size: 0.875rem;
   color: var(--color-text-muted, #aaa);
+}
+
+.qrWrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
 }
 
 .codeDisplay {

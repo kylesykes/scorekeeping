@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import styles from "./ShareModal.module.css";
 
 export default function ShareModal({ code, onDismiss }) {
@@ -31,7 +32,16 @@ export default function ShareModal({ code, onDismiss }) {
   return (
     <div className={styles.overlay} onClick={onDismiss}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <p className={styles.label}>Share this code to invite players</p>
+        <p className={styles.label}>Scan or share to invite players</p>
+        <div className={styles.qrWrapper}>
+          <QRCodeSVG
+            value={url}
+            size={180}
+            bgColor="transparent"
+            fgColor="#ffffff"
+            level="M"
+          />
+        </div>
         <div className={styles.codeDisplay}>
           {code.split("").map((char, i) => (
             <div key={i} className={styles.codeChar}>
