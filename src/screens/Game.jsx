@@ -126,6 +126,7 @@ export default function Game() {
           sourcePlayerId: p.id,
           score,
           winner: maxScore > 0 && score === maxScore,
+          startPlayer: false,
         };
       }),
     };
