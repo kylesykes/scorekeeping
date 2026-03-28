@@ -1,4 +1,4 @@
--- Tally: Game Night Scoreboard
+-- NerdScore: Game Night Scoreboard
 -- Supabase schema — run this in the SQL Editor
 
 -- =============================================================

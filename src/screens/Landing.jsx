@@ -1,12 +1,10 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useIdentity } from "../hooks/useIdentity";
 import { useSession } from "../hooks/useSession";
 import styles from "./Landing.module.css";
 
 export default function Landing() {
   const navigate = useNavigate();
-  const { deviceId, name, setName } = useIdentity();
   const { create, join, loading, error } = useSession();
 
   const [codeChars, setCodeChars] = useState(["", "", "", ""]);
@@ -14,16 +12,15 @@ export default function Landing() {
 
   // ---- Start a new game ----
   const handleStart = async () => {
-    if (!name.trim()) return;
-    const sess = await create({ playerName: name, deviceId });
+    const sess = await create();
     if (sess) navigate(`/${sess.code}/game?new=1`);
   };
 
   // ---- Join via code ----
   const handleJoin = async () => {
     const code = codeChars.join("");
-    if (code.length < 4 || !name.trim()) return;
-    const sess = await join({ code, playerName: name, deviceId });
+    if (code.length < 4) return;
+    const sess = await join({ code });
     if (sess) navigate(`/${code.toUpperCase()}/game`);
   };
 
@@ -50,24 +47,15 @@ export default function Landing() {
   return (
     <div className={styles.container}>
       <div className={styles.hero}>
-        <h1 className={styles.title}>Tally</h1>
+        <h1 className={styles.title}>NerdScore</h1>
         <p className={styles.subtitle}>game night scoreboard</p>
       </div>
 
       <div className={styles.form}>
-        <input
-          type="text"
-          className={styles.nameInput}
-          placeholder="Your name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          maxLength={24}
-        />
-
         <button
           className={styles.primaryBtn}
           onClick={handleStart}
-          disabled={loading || !name.trim()}
+          disabled={loading}
         >
           {loading ? "Creating…" : "Start a game"}
         </button>
@@ -96,7 +84,7 @@ export default function Landing() {
           <button
             className={styles.joinBtn}
             onClick={handleJoin}
-            disabled={loading || !codeComplete || !name.trim()}
+            disabled={loading || !codeComplete}
           >
             Join
           </button>

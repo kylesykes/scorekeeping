@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useIdentity } from "../hooks/useIdentity";
 import { useSession } from "../hooks/useSession";
@@ -6,13 +6,14 @@ import { useRounds } from "../hooks/useRounds";
 import Leaderboard from "../components/Leaderboard";
 import RoundsTable from "../components/RoundsTable";
 import ShareModal from "../components/ShareModal";
+import AddPlayerModal from "../components/AddPlayerModal";
 import styles from "./Game.module.css";
 
 export default function Game() {
   const { code } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { deviceId, name } = useIdentity();
-  const { session, players, join, addPlayer, removePlayer } = useSession(code);
+  const { deviceId } = useIdentity();
+  const { session, players, addPlayer, removePlayer } = useSession(code);
   const {
     rounds,
     totals,
@@ -24,15 +25,7 @@ export default function Game() {
 
   const [tab, setTab] = useState("leaderboard");
   const [showShare, setShowShare] = useState(false);
-  const joinedRef = useRef(false);
-
-  // Auto-join if the user has a name but hasn't joined this session
-  useEffect(() => {
-    if (name && deviceId && code && !joinedRef.current) {
-      joinedRef.current = true;
-      join({ code, playerName: name, deviceId });
-    }
-  }, [name, deviceId, code, join]);
+  const [showAddPlayer, setShowAddPlayer] = useState(false);
 
   // Show share modal on first visit for the creator (?new=1)
   useEffect(() => {
@@ -93,10 +86,8 @@ export default function Game() {
     setTab("rounds");
   };
 
-  const handleAddPlayer = async () => {
-    const playerName = prompt("Player name:");
-    if (!playerName?.trim()) return;
-    await addPlayer(playerName.trim());
+  const handleAddPlayer = async (playerName) => {
+    await addPlayer(playerName);
   };
 
   // Sort players by total score descending for leaderboard
@@ -123,7 +114,7 @@ export default function Game() {
           >
             Share
           </button>
-          <button className={styles.headerBtn} onClick={handleAddPlayer}>
+          <button className={styles.headerBtn} onClick={() => setShowAddPlayer(true)}>
             + Player
           </button>
           <button className={styles.headerBtn} onClick={handleNewRound}>
@@ -165,6 +156,13 @@ export default function Game() {
 
       {showShare && (
         <ShareModal code={code} onDismiss={() => setShowShare(false)} />
+      )}
+
+      {showAddPlayer && (
+        <AddPlayerModal
+          onAdd={handleAddPlayer}
+          onDismiss={() => setShowAddPlayer(false)}
+        />
       )}
     </div>
   );

@@ -20,7 +20,7 @@ export default function ShareModal({ code, onDismiss }) {
   const handleShare = async () => {
     if (navigator.share) {
       try {
-        await navigator.share({ title: "Join my Tally game!", url });
+        await navigator.share({ title: "Join my NerdScore game!", url });
       } catch {
         // user cancelled
       }

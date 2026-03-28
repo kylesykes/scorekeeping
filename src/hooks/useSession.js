@@ -17,7 +17,7 @@ export function useSession(sessionCode = null) {
   // -----------------------------------------------------------
   // Create a new session
   // -----------------------------------------------------------
-  const create = useCallback(async ({ gameName, playerName, deviceId }) => {
+  const create = useCallback(async ({ gameName } = {}) => {
     setLoading(true);
     setError(null);
     try {
@@ -35,16 +35,6 @@ export function useSession(sessionCode = null) {
         .single();
       if (sessErr) throw sessErr;
 
-      // Add the host as the first player
-      const { error: playerErr } = await supabase.from("players").insert({
-        session_code: code,
-        name: playerName,
-        color: getPlayerColor(0),
-        device_id: deviceId,
-        is_host: true,
-      });
-      if (playerErr) throw playerErr;
-
       setSession(sess);
       return sess;
     } catch (err) {
@@ -58,7 +48,7 @@ export function useSession(sessionCode = null) {
   // -----------------------------------------------------------
   // Join an existing session
   // -----------------------------------------------------------
-  const join = useCallback(async ({ code, playerName, deviceId }) => {
+  const join = useCallback(async ({ code }) => {
     setLoading(true);
     setError(null);
     try {
@@ -71,31 +61,6 @@ export function useSession(sessionCode = null) {
         .eq("code", upperCode)
         .single();
       if (sessErr) throw new Error("Session not found");
-
-      // Check if this device already joined
-      const { data: existing } = await supabase
-        .from("players")
-        .select()
-        .eq("session_code", upperCode)
-        .eq("device_id", deviceId)
-        .maybeSingle();
-
-      if (!existing) {
-        // Get current player count for color assignment
-        const { count } = await supabase
-          .from("players")
-          .select("*", { count: "exact", head: true })
-          .eq("session_code", upperCode);
-
-        const { error: playerErr } = await supabase.from("players").insert({
-          session_code: upperCode,
-          name: playerName,
-          color: getPlayerColor(count ?? 0),
-          device_id: deviceId,
-          is_host: false,
-        });
-        if (playerErr) throw playerErr;
-      }
 
       setSession(sess);
       return sess;
