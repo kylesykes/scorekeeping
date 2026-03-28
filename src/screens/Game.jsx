@@ -15,7 +15,8 @@ export default function Game() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { deviceId } = useIdentity();
   useWakeLock();
-  const { session, players, addPlayer, removePlayer } = useSession(code);
+  const { session, players, addPlayer, removePlayer, updateGameName } =
+    useSession(code);
   const {
     rounds,
     totals,
@@ -28,6 +29,9 @@ export default function Game() {
   const [tab, setTab] = useState("leaderboard");
   const [showShare, setShowShare] = useState(false);
   const [showAddPlayer, setShowAddPlayer] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [draftName, setDraftName] = useState("");
+  const [showMenu, setShowMenu] = useState(false);
 
   // Show share modal on first visit for the creator (?new=1)
   useEffect(() => {
@@ -97,31 +101,130 @@ export default function Game() {
     (a, b) => (totals[b.id] ?? 0) - (totals[a.id] ?? 0)
   );
 
+  const handleExportBGStats = () => {
+    const gameName = session?.game_name || "Game";
+    const maxScore = Math.max(...players.map((p) => totals[p.id] ?? 0));
+
+    const playData = {
+      sourceName: "NerdScore",
+      sourcePlayId: code,
+      playDate: new Date()
+        .toISOString()
+        .replace("T", " ")
+        .replace(/\.\d{3}Z$/, ""),
+      durationMin: 0,
+      game: {
+        name: gameName,
+        sourceGameId: gameName,
+        highestWins: true,
+        noPoints: false,
+      },
+      players: players.map((p) => {
+        const score = totals[p.id] ?? 0;
+        return {
+          name: p.name,
+          sourcePlayerId: p.id,
+          score,
+          winner: maxScore > 0 && score === maxScore,
+        };
+      }),
+    };
+
+    const encoded = encodeURIComponent(JSON.stringify(playData));
+    const url = `https://app.bgstatsapp.com/createPlay.html?data=${encoded}`;
+    window.open(url, "_blank");
+  };
+
   return (
     <div className={styles.container}>
       <header className={styles.header}>
         <div>
-          <h1 className={styles.gameName}>
-            {session?.game_name || "Game"}
-          </h1>
+          {editingName ? (
+            <input
+              className={styles.gameNameInput}
+              value={draftName}
+              onChange={(e) => setDraftName(e.target.value)}
+              onBlur={() => {
+                updateGameName(draftName.trim());
+                setEditingName(false);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  updateGameName(draftName.trim());
+                  setEditingName(false);
+                } else if (e.key === "Escape") {
+                  setEditingName(false);
+                }
+              }}
+              autoFocus
+              placeholder="Game name"
+            />
+          ) : (
+            <h1
+              className={styles.gameName}
+              onClick={() => {
+                setDraftName(session?.game_name || "");
+                setEditingName(true);
+              }}
+              title="Tap to edit game name"
+            >
+              {session?.game_name || "Game"}
+            </h1>
+          )}
           <p className={styles.meta}>
             {code} · {rounds.length} round{rounds.length !== 1 ? "s" : ""}
           </p>
         </div>
         <div className={styles.headerActions}>
-          <button
-            className={styles.headerBtn}
-            onClick={() => setShowShare(true)}
-            aria-label="Share"
-          >
-            Share
-          </button>
-          <button className={styles.headerBtn} onClick={() => setShowAddPlayer(true)}>
-            + Player
-          </button>
           <button className={styles.headerBtn} onClick={handleNewRound}>
             + Round
           </button>
+          <div className={styles.menuWrapper}>
+            <button
+              className={styles.headerBtn}
+              onClick={() => setShowMenu((v) => !v)}
+              aria-label="Menu"
+            >
+              ☰
+            </button>
+            {showMenu && (
+              <>
+                <div
+                  className={styles.menuBackdrop}
+                  onClick={() => setShowMenu(false)}
+                />
+                <div className={styles.menu}>
+                  <button
+                    className={styles.menuItem}
+                    onClick={() => {
+                      setShowShare(true);
+                      setShowMenu(false);
+                    }}
+                  >
+                    Share
+                  </button>
+                  <button
+                    className={styles.menuItem}
+                    onClick={() => {
+                      setShowAddPlayer(true);
+                      setShowMenu(false);
+                    }}
+                  >
+                    Add Player
+                  </button>
+                  <button
+                    className={styles.menuItem}
+                    onClick={() => {
+                      handleExportBGStats();
+                      setShowMenu(false);
+                    }}
+                  >
+                    Export to BGStats
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </header>
 

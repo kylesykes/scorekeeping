@@ -19,6 +19,21 @@
   font-weight: 500;
   margin: 0;
   color: var(--color-text, #111);
+  cursor: pointer;
+  border-bottom: 1px dashed var(--color-text-muted, #888);
+}
+
+.gameNameInput {
+  font-size: 1.125rem;
+  font-weight: 500;
+  margin: 0;
+  color: var(--color-text, #111);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-text, #111);
+  outline: none;
+  width: 100%;
+  padding: 0;
 }
 
 .meta {
@@ -30,6 +45,7 @@
 .headerActions {
   display: flex;
   gap: 0.5rem;
+  align-items: center;
 }
 
 .headerBtn {
@@ -42,6 +58,51 @@
   color: var(--color-text-muted, #666);
   cursor: pointer;
   white-space: nowrap;
+}
+
+/* ---- Hamburger menu ---- */
+
+.menuWrapper {
+  position: relative;
+}
+
+.menuBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+}
+
+.menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.375rem);
+  background: var(--color-surface, #f5f5f5);
+  border: 1px solid var(--color-border, #e0e0e0);
+  border-radius: 8px;
+  min-width: 10rem;
+  z-index: 10;
+  overflow: hidden;
+}
+
+.menuItem {
+  display: block;
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: var(--color-text, #111);
+  cursor: pointer;
+}
+
+.menuItem:hover {
+  background: var(--color-border, #e0e0e0);
+}
+
+.menuItem + .menuItem {
+  border-top: 1px solid var(--color-border, #e0e0e0);
 }
 
 /* ---- Tabs ---- */

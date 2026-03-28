@@ -128,6 +128,22 @@ export function useSession(sessionCode = null) {
   );
 
   // -----------------------------------------------------------
+  // Fetch session when joining via URL (sessionCode provided)
+  // -----------------------------------------------------------
+  useEffect(() => {
+    if (session || !sessionCode) return;
+    const fetchSession = async () => {
+      const { data } = await supabase
+        .from("sessions")
+        .select()
+        .eq("code", sessionCode.toUpperCase())
+        .single();
+      if (data) setSession(data);
+    };
+    fetchSession();
+  }, [session, sessionCode]);
+
+  // -----------------------------------------------------------
   // Load players + subscribe to realtime changes
   // -----------------------------------------------------------
   useEffect(() => {
@@ -168,5 +184,26 @@ export function useSession(sessionCode = null) {
     };
   }, [session?.code, sessionCode]);
 
-  return { session, players, create, join, addPlayer, removePlayer, loading, error };
+  // -----------------------------------------------------------
+  // Update the game name
+  // -----------------------------------------------------------
+  const updateGameName = useCallback(
+    async (gameName) => {
+      const code = session?.code ?? sessionCode;
+      if (!code) return false;
+      const { error: err } = await supabase
+        .from("sessions")
+        .update({ game_name: gameName || null })
+        .eq("code", code);
+      if (err) {
+        console.error("Error updating game name:", err);
+        return false;
+      }
+      setSession((prev) => (prev ? { ...prev, game_name: gameName || null } : prev));
+      return true;
+    },
+    [session, sessionCode]
+  );
+
+  return { session, players, create, join, addPlayer, removePlayer, updateGameName, loading, error };
 }
