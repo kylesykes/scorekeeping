@@ -9,7 +9,7 @@ create table sessions (
   code        text primary key,            -- 4-char alphanumeric e.g. 'K7QM'
   game_name   text,                        -- optional, e.g. 'Wingspan'
   created_at  timestamptz not null default now(),
-  expires_at  timestamptz not null default now() + interval '24 hours'
+  expires_at  timestamptz not null default now() + interval '48 hours'
 );
 
 create table players (
@@ -107,6 +107,18 @@ begin
   end loop;
 end;
 $$;
+
+-- =============================================================
+-- Scheduled cleanup: delete expired sessions every hour
+-- Requires pg_cron extension (enable via Supabase dashboard first)
+-- Cascading FKs automatically clean up players, rounds, and scores
+-- =============================================================
+
+select cron.schedule(
+  'cleanup-expired-sessions',
+  '0 * * * *',
+  $$DELETE FROM sessions WHERE expires_at < now()$$
+);
 
 -- =============================================================
 -- Enable Realtime on tables that need live sync
