@@ -7,12 +7,14 @@ import Leaderboard from "../components/Leaderboard";
 import RoundsTable from "../components/RoundsTable";
 import ShareModal from "../components/ShareModal";
 import AddPlayerModal from "../components/AddPlayerModal";
+import useWakeLock from "../hooks/useWakeLock";
 import styles from "./Game.module.css";
 
 export default function Game() {
   const { code } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const { deviceId } = useIdentity();
+  useWakeLock();
   const { session, players, addPlayer, removePlayer } = useSession(code);
   const {
     rounds,

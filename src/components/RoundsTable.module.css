@@ -35,6 +35,12 @@
   min-width: 3.5rem;
 }
 
+.leaderCol {
+  background: rgba(245, 180, 50, 0.08);
+  border-top: 2px solid rgba(245, 180, 50, 0.6);
+  border-radius: 4px 4px 0 0;
+}
+
 .playerColBtn {
   display: flex;
   flex-direction: column;
@@ -173,6 +179,10 @@
   font-weight: 600;
   font-size: 1rem;
   color: var(--color-text, #fff);
+}
+
+.leaderTotal {
+  color: rgb(245, 180, 50);
 }
 
 /* Score cells */

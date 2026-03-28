@@ -66,6 +66,15 @@ export default function RoundsTable({
     setPlayerMenu(null);
   };
 
+  // Determine leaders (highest total, only if there are scores)
+  const leaderIds = (() => {
+    const entries = Object.entries(totals);
+    if (entries.length === 0) return new Set();
+    const max = Math.max(...entries.map(([, v]) => v));
+    if (max === 0) return new Set();
+    return new Set(entries.filter(([, v]) => v === max).map(([id]) => id));
+  })();
+
   // Show newest rounds first
   const sortedRounds = [...rounds].reverse();
 
@@ -82,7 +91,7 @@ export default function RoundsTable({
           <tr>
             <th className={styles.roundLabelCol}></th>
             {players.map((p) => (
-              <th key={p.id} className={styles.playerCol}>
+              <th key={p.id} className={`${styles.playerCol} ${leaderIds.has(p.id) ? styles.leaderCol : ""}`}>
                 <button
                   className={styles.playerColBtn}
                   onClick={() =>
@@ -140,7 +149,7 @@ export default function RoundsTable({
           <tr className={styles.totalsRow}>
             <td className={styles.roundLabel}>Total</td>
             {players.map((p) => (
-              <td key={p.id} className={styles.totalCell}>
+              <td key={p.id} className={`${styles.totalCell} ${leaderIds.has(p.id) ? styles.leaderTotal : ""}`}>
                 {totals[p.id] ?? 0}
               </td>
             ))}
