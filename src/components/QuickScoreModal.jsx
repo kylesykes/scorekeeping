@@ -1,44 +1,9 @@
-import { useState, useRef, useEffect } from "react";
-import { evaluateMath } from "../lib/math";
+import { useState } from "react";
+import MathKeypad from "./MathKeypad";
 import styles from "./QuickScoreModal.module.css";
 
 export default function QuickScoreModal({ player, initialFormula, onSave, onDismiss }) {
   const [val, setVal] = useState(initialFormula || "");
-  const inputRef = useRef(null);
-
-  useEffect(() => {
-    // Auto-focus the input when modal opens.
-    if (inputRef.current) {
-      inputRef.current.focus();
-      // Move cursor to the end
-      const length = inputRef.current.value.length;
-      inputRef.current.setSelectionRange(length, length);
-    }
-  }, []);
-
-  const handleChange = (e) => {
-    const value = e.target.value;
-    if (value !== "" && value !== "-" && !/^[0-9+\-*\/().\s]*$/.test(value)) return;
-    setVal(value);
-  };
-
-  const insertSymbol = (sym) => {
-    setVal((prev) => prev + sym);
-    // Keep focus
-    if (inputRef.current) {
-      inputRef.current.focus();
-    }
-  };
-
-  const handleSave = () => {
-    const text = val.trim() === "" ? "0" : val;
-    const num = evaluateMath(text);
-    if (num === null) {
-      onDismiss(); // just ignore if invalid math
-      return;
-    }
-    onSave(text, num);
-  };
 
   return (
     <div className={styles.overlay} onClick={onDismiss}>
@@ -50,47 +15,15 @@ export default function QuickScoreModal({ player, initialFormula, onSave, onDism
           >
             {player.name.charAt(0).toUpperCase()}
           </div>
-          <div className={styles.name}>{player.name}'s Score</div>
+          <div className={styles.name}>{player.name}</div>
         </div>
 
-        <div className={styles.body}>
-          <input
-            ref={inputRef}
-            className={styles.input}
-            inputMode="decimal"
-            value={val}
-            onChange={handleChange}
-            placeholder="e.g. 10 + 5"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleSave();
-              if (e.key === "Escape") onDismiss();
-            }}
-          />
-          <div className={styles.helperRow}>
-            {["+", "-", "*", "/"].map((sym) => (
-              <button
-                key={sym}
-                type="button"
-                className={styles.helperBtn}
-                onMouseDown={(e) => {
-                  e.preventDefault(); // prevents input blur
-                  insertSymbol(sym);
-                }}
-              >
-                {sym}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className={styles.actions}>
-          <button className={styles.btnCancel} onClick={onDismiss}>
-            Cancel
-          </button>
-          <button className={styles.btnSave} onClick={handleSave}>
-            Save
-          </button>
-        </div>
+        <MathKeypad
+          value={val}
+          onChange={setVal}
+          onSubmit={onSave}
+          onCancel={onDismiss}
+        />
       </div>
     </div>
   );

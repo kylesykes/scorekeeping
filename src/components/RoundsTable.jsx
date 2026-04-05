@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { evaluateMath } from "../lib/math";
+import MathKeypad from "./MathKeypad";
 import styles from "./RoundsTable.module.css";
 
 export default function RoundsTable({
@@ -54,56 +55,44 @@ export default function RoundsTable({
 
   const cellKey = (roundId, playerId) => `${roundId}-${playerId}`;
 
-  const getValue = (roundId, playerId) => {
-    const key = cellKey(roundId, playerId);
-    if (key in inputs) return inputs[key];
+  const getDisplayValue = (roundId, playerId) => {
     const saved = scoresByRound[roundId]?.[playerId];
     return saved?.score !== undefined ? String(saved.score) : "";
   };
 
-  const handleFocus = (roundId, playerId) => {
-    const key = cellKey(roundId, playerId);
-    if (key in inputs) return;
+  const openKeypad = (roundId, playerId) => {
     const saved = scoresByRound[roundId]?.[playerId];
-    if (saved?.formula) {
-      setInputs((prev) => ({ ...prev, [key]: saved.formula }));
-    } else if (saved?.score !== undefined) {
-      setInputs((prev) => ({ ...prev, [key]: String(saved.score) }));
-    }
+    const initial = saved?.formula || (saved?.score !== undefined ? String(saved.score) : "");
     setFocusedCell({ roundId, playerId });
+    setInputs((prev) => ({ ...prev, [cellKey(roundId, playerId)]: initial }));
   };
 
-  const handleChange = (roundId, playerId, value) => {
-    if (value !== "" && value !== "-" && !/^[0-9+\-*\/().\s]*$/.test(value)) return;
-    setInputs((prev) => ({ ...prev, [cellKey(roundId, playerId)]: value }));
+  const handleKeypadChange = (newVal) => {
+    if (!focusedCell) return;
+    setInputs((prev) => ({ ...prev, [cellKey(focusedCell.roundId, focusedCell.playerId)]: newVal }));
   };
 
-  const handleBlur = useCallback(
-    (roundId, playerId) => {
-      const key = cellKey(roundId, playerId);
-      let val = inputs[key];
-      if (val === undefined) return;
-      
-      if (val === "" || val === "-") {
-        val = "0";
-      }
-      
-      const num = evaluateMath(val);
-      if (num === null) return;
+  const handleKeypadSubmit = (formula, score) => {
+    if (!focusedCell) return;
+    onScore({ roundId: focusedCell.roundId, playerId: focusedCell.playerId, score, formula, deviceId });
+    setInputs((prev) => {
+      const next = { ...prev };
+      delete next[cellKey(focusedCell.roundId, focusedCell.playerId)];
+      return next;
+    });
+    setFocusedCell(null);
+  };
 
-      onScore({ roundId, playerId, score: num, formula: val, deviceId });
+  const handleKeypadCancel = () => {
+    if (focusedCell) {
       setInputs((prev) => {
         const next = { ...prev };
-        delete next[key];
+        delete next[cellKey(focusedCell.roundId, focusedCell.playerId)];
         return next;
       });
-      // Important to use a small timeout to allow clicking adjacent buttons before bar vanishes
-      setTimeout(() => {
-         setFocusedCell(null);
-      }, 50);
-    },
-    [inputs, onScore, deviceId]
-  );
+    }
+    setFocusedCell(null);
+  };
 
   const hasScores = (roundId) =>
     scoresByRound[roundId] && Object.keys(scoresByRound[roundId]).length > 0;
@@ -216,22 +205,14 @@ export default function RoundsTable({
             <tr key={round.id} className={styles.roundRow}>
               <td className={styles.roundLabel}>R{rounds.length - idx}</td>
               {players.map((p) => (
-                <td key={p.id} className={`${styles.scoreCell} ${changedCells[cellKey(round.id, p.id)] ? styles.remoteUpdateHighlight : ""}`}>
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    className={styles.scoreInput}
-                    placeholder="—"
-                    value={getValue(round.id, p.id)}
-                    onChange={(e) =>
-                      handleChange(round.id, p.id, e.target.value)
-                    }
-                    onFocus={() => handleFocus(round.id, p.id)}
-                    onBlur={() => handleBlur(round.id, p.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") e.target.blur();
-                    }}
-                  />
+                <td
+                  key={p.id}
+                  className={`${styles.scoreCell} ${changedCells[cellKey(round.id, p.id)] ? styles.remoteUpdateHighlight : ""}`}
+                  onClick={() => openKeypad(round.id, p.id)}
+                >
+                  <div className={styles.scoreInput}>
+                    {getDisplayValue(round.id, p.id) || <span className={styles.scorePlaceholder}>—</span>}
+                  </div>
                 </td>
               ))}
               <td className={styles.actionCell}>
@@ -274,21 +255,15 @@ export default function RoundsTable({
       )}
 
       {focusedCell && (
-        <div className={styles.tableHelperRow}>
-          {["+", "-", "*", "/"].map((sym) => (
-            <button
-              key={sym}
-              type="button"
-              className={styles.tableHelperBtn}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                const currentValue = getValue(focusedCell.roundId, focusedCell.playerId);
-                handleChange(focusedCell.roundId, focusedCell.playerId, currentValue + sym);
-              }}
-            >
-              {sym}
-            </button>
-          ))}
+        <div className={styles.keypadOverlay} onClick={handleKeypadCancel}>
+          <div className={styles.keypadSheet} onClick={(e) => e.stopPropagation()}>
+            <MathKeypad
+              value={inputs[cellKey(focusedCell.roundId, focusedCell.playerId)] || ""}
+              onChange={handleKeypadChange}
+              onSubmit={handleKeypadSubmit}
+              onCancel={handleKeypadCancel}
+            />
+          </div>
         </div>
       )}
     </div>
