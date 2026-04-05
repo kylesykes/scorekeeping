@@ -22,6 +22,14 @@ export default function QuickScoreModal({ player, initialFormula, onSave, onDism
     setVal(value);
   };
 
+  const insertSymbol = (sym) => {
+    setVal((prev) => prev + sym);
+    // Keep focus
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
+
   const handleSave = () => {
     const text = val.trim() === "" ? "0" : val;
     const num = evaluateMath(text);
@@ -49,6 +57,7 @@ export default function QuickScoreModal({ player, initialFormula, onSave, onDism
           <input
             ref={inputRef}
             className={styles.input}
+            inputMode="decimal"
             value={val}
             onChange={handleChange}
             placeholder="e.g. 10 + 5"
@@ -57,6 +66,21 @@ export default function QuickScoreModal({ player, initialFormula, onSave, onDism
               if (e.key === "Escape") onDismiss();
             }}
           />
+          <div className={styles.helperRow}>
+            {["+", "-", "*", "/"].map((sym) => (
+              <button
+                key={sym}
+                type="button"
+                className={styles.helperBtn}
+                onMouseDown={(e) => {
+                  e.preventDefault(); // prevents input blur
+                  insertSymbol(sym);
+                }}
+              >
+                {sym}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className={styles.actions}>

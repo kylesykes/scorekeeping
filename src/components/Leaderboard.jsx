@@ -26,7 +26,9 @@ export default function Leaderboard({ players, totals, rounds, scoresByRound, ac
 
     // 2. Sort players based on these previous totals
     const prevRanked = [...players].sort((a, b) => {
-      return (prevTotals[b.id] || 0) - (prevTotals[a.id] || 0);
+      const diff = (prevTotals[b.id] || 0) - (prevTotals[a.id] || 0);
+      if (diff !== 0) return diff;
+      return a.name.localeCompare(b.name);
     });
 
     // 3. Map players to their previous rank index

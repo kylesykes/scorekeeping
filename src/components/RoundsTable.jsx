@@ -17,6 +17,7 @@ export default function RoundsTable({
   const [inputs, setInputs] = useState({});
   const [confirmingDelete, setConfirmingDelete] = useState(null);
   const [playerMenu, setPlayerMenu] = useState(null); // player id
+  const [focusedCell, setFocusedCell] = useState(null);
   const [changedCells, setChangedCells] = useState({});
   const prevScoresRef = useRef(scoresByRound);
 
@@ -69,6 +70,7 @@ export default function RoundsTable({
     } else if (saved?.score !== undefined) {
       setInputs((prev) => ({ ...prev, [key]: String(saved.score) }));
     }
+    setFocusedCell({ roundId, playerId });
   };
 
   const handleChange = (roundId, playerId, value) => {
@@ -95,6 +97,10 @@ export default function RoundsTable({
         delete next[key];
         return next;
       });
+      // Important to use a small timeout to allow clicking adjacent buttons before bar vanishes
+      setTimeout(() => {
+         setFocusedCell(null);
+      }, 50);
     },
     [inputs, onScore, deviceId]
   );
@@ -213,6 +219,7 @@ export default function RoundsTable({
                 <td key={p.id} className={`${styles.scoreCell} ${changedCells[cellKey(round.id, p.id)] ? styles.remoteUpdateHighlight : ""}`}>
                   <input
                     type="text"
+                    inputMode="decimal"
                     className={styles.scoreInput}
                     placeholder="—"
                     value={getValue(round.id, p.id)}
@@ -263,6 +270,25 @@ export default function RoundsTable({
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {focusedCell && (
+        <div className={styles.tableHelperRow}>
+          {["+", "-", "*", "/"].map((sym) => (
+            <button
+              key={sym}
+              type="button"
+              className={styles.tableHelperBtn}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                const currentValue = getValue(focusedCell.roundId, focusedCell.playerId);
+                handleChange(focusedCell.roundId, focusedCell.playerId, currentValue + sym);
+              }}
+            >
+              {sym}
+            </button>
+          ))}
         </div>
       )}
     </div>

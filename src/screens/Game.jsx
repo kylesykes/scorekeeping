@@ -116,9 +116,11 @@ export default function Game() {
   };
 
   // Sort players by total score descending for leaderboard
-  const ranked = [...players].sort(
-    (a, b) => (totals[b.id] ?? 0) - (totals[a.id] ?? 0)
-  );
+  const ranked = [...players].sort((a, b) => {
+    const diff = (totals[b.id] ?? 0) - (totals[a.id] ?? 0);
+    if (diff !== 0) return diff;
+    return a.name.localeCompare(b.name);
+  });
 
   const handleExportBGStats = () => {
     const gameName = session?.game_name || "Game";

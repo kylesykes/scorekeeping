@@ -198,8 +198,8 @@ export function useRounds(sessionCode) {
     [scores]
   );
 
-  /** The currently open round, if any */
-  const activeRound = rounds.find((r) => r.status === "open") ?? null;
+  /** The currently active (most recent) round */
+  const activeRound = rounds.length > 0 ? rounds[rounds.length - 1] : null;
 
   return {
     rounds,
