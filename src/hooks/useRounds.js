@@ -54,7 +54,7 @@ export function useRounds(sessionCode) {
   // Upsert a score (insert or update if already exists)
   // -----------------------------------------------------------
   const upsertScore = useCallback(
-    async ({ roundId, playerId, score, deviceId }) => {
+    async ({ roundId, playerId, score, formula, deviceId }) => {
       const { data, error } = await supabase
         .from("scores")
         .upsert(
@@ -62,6 +62,7 @@ export function useRounds(sessionCode) {
             round_id: roundId,
             player_id: playerId,
             score,
+            formula,
             entered_by: deviceId,
           },
           { onConflict: "round_id,player_id" }
@@ -167,12 +168,12 @@ export function useRounds(sessionCode) {
     [scores]
   );
 
-  /** Map of roundId -> { playerId: score } */
+  /** Map of roundId -> { playerId: { score, formula } } */
   const scoresByRound = useMemo(
     () =>
       scores.reduce((acc, s) => {
         if (!acc[s.round_id]) acc[s.round_id] = {};
-        acc[s.round_id][s.player_id] = s.score;
+        acc[s.round_id][s.player_id] = { score: s.score, formula: s.formula };
         return acc;
       }, {}),
     [scores]

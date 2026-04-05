@@ -23,11 +23,36 @@ export default function RoundsTable({
     const key = cellKey(roundId, playerId);
     if (key in inputs) return inputs[key];
     const saved = scoresByRound[roundId]?.[playerId];
-    return saved !== undefined ? String(saved) : "";
+    return saved?.score !== undefined ? String(saved.score) : "";
+  };
+
+  const handleFocus = (roundId, playerId) => {
+    const key = cellKey(roundId, playerId);
+    if (key in inputs) return;
+    const saved = scoresByRound[roundId]?.[playerId];
+    if (saved?.formula) {
+      setInputs((prev) => ({ ...prev, [key]: saved.formula }));
+    } else if (saved?.score !== undefined) {
+      setInputs((prev) => ({ ...prev, [key]: String(saved.score) }));
+    }
+  };
+
+  const evaluateMath = (expr) => {
+    try {
+      if (!expr) return null;
+      if (!/^[0-9+\-*\/().\s]*$/.test(expr)) return null;
+      if (!expr.trim()) return null;
+      // eslint-disable-next-line no-new-func
+      const result = new Function("return " + expr)();
+      if (!Number.isFinite(result)) return null;
+      return Math.round(result);
+    } catch {
+      return null;
+    }
   };
 
   const handleChange = (roundId, playerId, value) => {
-    if (value !== "" && value !== "-" && isNaN(Number(value))) return;
+    if (value !== "" && value !== "-" && !/^[0-9+\-*\/().\s]*$/.test(value)) return;
     setInputs((prev) => ({ ...prev, [cellKey(roundId, playerId)]: value }));
   };
 
@@ -37,10 +62,11 @@ export default function RoundsTable({
       const val = inputs[key];
       if (val === undefined) return;
       if (val === "" || val === "-") return;
-      const num = Number(val);
-      if (isNaN(num)) return;
+      
+      const num = evaluateMath(val);
+      if (num === null) return;
 
-      onScore({ roundId, playerId, score: num, deviceId });
+      onScore({ roundId, playerId, score: num, formula: val, deviceId });
       setInputs((prev) => {
         const next = { ...prev };
         delete next[key];
@@ -164,13 +190,13 @@ export default function RoundsTable({
                 <td key={p.id} className={styles.scoreCell}>
                   <input
                     type="text"
-                    inputMode="numeric"
                     className={styles.scoreInput}
                     placeholder="—"
                     value={getValue(round.id, p.id)}
                     onChange={(e) =>
                       handleChange(round.id, p.id, e.target.value)
                     }
+                    onFocus={() => handleFocus(round.id, p.id)}
                     onBlur={() => handleBlur(round.id, p.id)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") e.target.blur();

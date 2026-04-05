@@ -42,6 +42,7 @@ create table scores (
   round_id    uuid not null references rounds(id) on delete cascade,
   player_id   uuid not null references players(id) on delete cascade,
   score       integer not null,
+  formula     text,                        -- optional math formula user typed
   entered_by  text,                        -- device_id of who entered this score
   entered_at  timestamptz not null default now(),
   unique(round_id, player_id)
