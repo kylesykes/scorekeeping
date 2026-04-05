@@ -14,12 +14,36 @@
 }
 
 .rank {
-  width: 1.75rem;
-  text-align: center;
+  width: 2.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.rankNumber {
   font-size: 0.9375rem;
   font-weight: 500;
   color: var(--color-text-muted, #888);
-  flex-shrink: 0;
+}
+
+.trendUp {
+  color: #4caf50;
+  font-size: 0.6rem;
+  animation: slideArrow 0.2s ease-out;
+}
+
+.trendDown {
+  color: #f44336;
+  font-size: 0.6rem;
+  animation: slideArrow 0.2s ease-out;
+}
+
+@keyframes slideArrow {
+  from { opacity: 0; transform: translateY(-2px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .avatar {
