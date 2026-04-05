@@ -55,6 +55,25 @@ export function useRounds(sessionCode) {
   // -----------------------------------------------------------
   const upsertScore = useCallback(
     async ({ roundId, playerId, score, formula, deviceId }) => {
+      // Optimistic update
+      const optimisticScore = {
+        round_id: roundId,
+        player_id: playerId,
+        score,
+        formula,
+        entered_by: deviceId,
+      };
+
+      setScores((prev) => {
+        const idx = prev.findIndex((s) => s.round_id === roundId && s.player_id === playerId);
+        if (idx >= 0) {
+          const next = [...prev];
+          next[idx] = { ...next[idx], ...optimisticScore };
+          return next;
+        }
+        return [...prev, optimisticScore];
+      });
+
       const { data, error } = await supabase
         .from("scores")
         .upsert(
@@ -168,12 +187,12 @@ export function useRounds(sessionCode) {
     [scores]
   );
 
-  /** Map of roundId -> { playerId: { score, formula } } */
+  /** Map of roundId -> { playerId: { score, formula, entered_by } } */
   const scoresByRound = useMemo(
     () =>
       scores.reduce((acc, s) => {
         if (!acc[s.round_id]) acc[s.round_id] = {};
-        acc[s.round_id][s.player_id] = { score: s.score, formula: s.formula };
+        acc[s.round_id][s.player_id] = { score: s.score, formula: s.formula, entered_by: s.entered_by };
         return acc;
       }, {}),
     [scores]

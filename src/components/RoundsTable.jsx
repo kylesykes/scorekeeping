@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import styles from "./RoundsTable.module.css";
 
 export default function RoundsTable({
@@ -16,6 +16,39 @@ export default function RoundsTable({
   const [inputs, setInputs] = useState({});
   const [confirmingDelete, setConfirmingDelete] = useState(null);
   const [playerMenu, setPlayerMenu] = useState(null); // player id
+  const [changedCells, setChangedCells] = useState({});
+  const prevScoresRef = useRef(scoresByRound);
+
+  useEffect(() => {
+    const prev = prevScoresRef.current;
+    let newChanges = {};
+    let hasChanges = false;
+    for (const rid in scoresByRound) {
+      for (const pid in scoresByRound[rid]) {
+        const after = scoresByRound[rid][pid];
+        const before = prev[rid]?.[pid];
+        if (after && before && after.score !== before.score && after.entered_by !== deviceId) {
+           newChanges[`${rid}-${pid}`] = Date.now();
+           hasChanges = true;
+        } else if (after && !before && after.entered_by !== deviceId) {
+           newChanges[`${rid}-${pid}`] = Date.now();
+           hasChanges = true;
+        }
+      }
+    }
+    
+    if (hasChanges) {
+      setChangedCells(c => ({...c, ...newChanges}));
+      setTimeout(() => {
+        setChangedCells(c => {
+           let next = {...c};
+           for (let k in newChanges) delete next[k];
+           return next;
+        });
+      }, 2000);
+    }
+    prevScoresRef.current = scoresByRound;
+  }, [scoresByRound, deviceId]);
 
   const cellKey = (roundId, playerId) => `${roundId}-${playerId}`;
 
@@ -59,9 +92,12 @@ export default function RoundsTable({
   const handleBlur = useCallback(
     (roundId, playerId) => {
       const key = cellKey(roundId, playerId);
-      const val = inputs[key];
+      let val = inputs[key];
       if (val === undefined) return;
-      if (val === "" || val === "-") return;
+      
+      if (val === "" || val === "-") {
+        val = "0";
+      }
       
       const num = evaluateMath(val);
       if (num === null) return;
@@ -187,7 +223,7 @@ export default function RoundsTable({
             <tr key={round.id} className={styles.roundRow}>
               <td className={styles.roundLabel}>R{rounds.length - idx}</td>
               {players.map((p) => (
-                <td key={p.id} className={styles.scoreCell}>
+                <td key={p.id} className={`${styles.scoreCell} ${changedCells[cellKey(round.id, p.id)] ? styles.remoteUpdateHighlight : ""}`}>
                   <input
                     type="text"
                     className={styles.scoreInput}
