@@ -1,0 +1,114 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+}
+
+.modal {
+  background: var(--color-surface, #222);
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.15));
+  border-radius: 16px;
+  width: 100%;
+  max-width: 320px;
+  padding: 1.25rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.name {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: var(--color-text, #fff);
+}
+
+.body {
+  margin-bottom: 1.5rem;
+}
+
+.input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-family: monospace;
+  font-size: 1.25rem;
+  background: var(--color-surface-hover, rgba(255, 255, 255, 0.08));
+  border: 2px solid var(--color-border, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+  color: var(--color-text, #fff);
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.input:focus {
+  border-color: var(--color-accent, #7c6ef0);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.btnCancel, .btnSave {
+  padding: 0.625rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s;
+}
+
+.btnCancel {
+  background: transparent;
+  color: var(--color-text-muted, #aaa);
+}
+
+.btnCancel:hover {
+  background: var(--color-surface-hover, rgba(255, 255, 255, 0.08));
+}
+
+.btnSave {
+  background: var(--color-accent, #7c6ef0);
+  color: #fff;
+}
+
+.btnSave:hover {
+  background: var(--color-accent-hover, #6b5ce0);
+}

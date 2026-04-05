@@ -1,34 +1,49 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect, useRef } from "react";
+import { useMemo } from "react";
 import styles from "./Leaderboard.module.css";
 
-export default function Leaderboard({ players, totals, rounds }) {
+export default function Leaderboard({ players, totals, rounds, scoresByRound, activeRound, onSelectPlayer }) {
   const roundCount = rounds.length || 1;
-  const [trends, setTrends] = useState({});
-  const prevRanksRef = useRef({});
 
-  // Use players mapped array string as dependency to detect hard re-orders
-  const playersSignature = players.map(p => p.id).join(',');
+  const prevRanks = useMemo(() => {
+    if (!scoresByRound) return {};
 
-  useEffect(() => {
-    setTrends((prev) => {
-      const next = { ...prev };
-      players.forEach((p, i) => {
-        const prevRank = prevRanksRef.current[p.id];
-        if (prevRank !== undefined) {
-          if (i < prevRank) next[p.id] = "up";
-          else if (i > prevRank) next[p.id] = "down";
+    // 1. Calculate previous totals excluding the active round
+    const prevTotals = {};
+    players.forEach(p => prevTotals[p.id] = 0);
+
+    rounds.forEach(round => {
+      // Ignore the currently active/open round so we are getting the "previous" state
+      if (activeRound && round.id === activeRound.id) return;
+      
+      const roundScores = scoresByRound[round.id] || {};
+      for (const [playerId, cell] of Object.entries(roundScores)) {
+        if (cell && cell.score !== undefined) {
+          prevTotals[playerId] = (prevTotals[playerId] || 0) + cell.score;
         }
-      });
-      return next;
+      }
     });
 
-    const currentRanks = {};
-    players.forEach((p, i) => {
-      currentRanks[p.id] = i;
+    // 2. Sort players based on these previous totals
+    const prevRanked = [...players].sort((a, b) => {
+      return (prevTotals[b.id] || 0) - (prevTotals[a.id] || 0);
     });
-    prevRanksRef.current = currentRanks;
-  }, [players, playersSignature]);
+
+    // 3. Map players to their previous rank index
+    const ranksMap = {};
+    prevRanked.forEach((p, i) => {
+      ranksMap[p.id] = i;
+    });
+    return ranksMap;
+  }, [players, rounds, scoresByRound, activeRound]);
+
+  const getTrend = (playerId, currentRank) => {
+    const prevRank = prevRanks[playerId];
+    if (prevRank === undefined) return null;
+    if (currentRank < prevRank) return "up";
+    if (currentRank > prevRank) return "down";
+    return null;
+  };
 
 
   return (
@@ -47,11 +62,12 @@ export default function Leaderboard({ players, totals, rounds }) {
               transition={{ type: "spring", stiffness: 350, damping: 30 }}
               key={player.id}
               className={styles.row}
+              onClick={() => onSelectPlayer && onSelectPlayer(player)}
             >
               <div className={styles.rank}>
                 <span className={styles.rankNumber}>{i + 1}</span>
-                {trends[player.id] === "up" && <span className={styles.trendUp}>▲</span>}
-                {trends[player.id] === "down" && <span className={styles.trendDown}>▼</span>}
+                {getTrend(player.id, i) === "up" && <span className={styles.trendUp}>▲</span>}
+                {getTrend(player.id, i) === "down" && <span className={styles.trendDown}>▼</span>}
               </div>
 
               <div

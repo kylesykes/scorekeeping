@@ -7,6 +7,7 @@ import Leaderboard from "../components/Leaderboard";
 import RoundsTable from "../components/RoundsTable";
 import ShareModal from "../components/ShareModal";
 import AddPlayerModal from "../components/AddPlayerModal";
+import QuickScoreModal from "../components/QuickScoreModal";
 import useWakeLock from "../hooks/useWakeLock";
 import styles from "./Game.module.css";
 
@@ -21,6 +22,7 @@ export default function Game() {
     rounds,
     totals,
     scoresByRound,
+    activeRound,
     createRound,
     upsertScore,
     deleteRound,
@@ -32,6 +34,23 @@ export default function Game() {
   const [editingName, setEditingName] = useState(false);
   const [draftName, setDraftName] = useState("");
   const [showMenu, setShowMenu] = useState(false);
+  const [selectedPlayerForScore, setSelectedPlayerForScore] = useState(null);
+
+  const handleQuickScore = async (formula, score) => {
+    let roundInfo = activeRound;
+    if (!roundInfo) {
+      if (rounds.length > 0 && rounds[0].status === "open") {
+        roundInfo = rounds[0];
+      } else {
+        roundInfo = await createRound();
+      }
+    }
+    
+    if (roundInfo && selectedPlayerForScore) {
+       await upsertScore({ roundId: roundInfo.id, playerId: selectedPlayerForScore.id, score, formula, deviceId });
+    }
+    setSelectedPlayerForScore(null);
+  };
 
   // Show share modal on first visit for the creator (?new=1)
   useEffect(() => {
@@ -245,7 +264,14 @@ export default function Game() {
       </div>
 
       {tab === "leaderboard" ? (
-        <Leaderboard players={ranked} totals={totals} rounds={rounds} />
+        <Leaderboard 
+          players={ranked} 
+          totals={totals} 
+          rounds={rounds} 
+          scoresByRound={scoresByRound}
+          activeRound={activeRound}
+          onSelectPlayer={setSelectedPlayerForScore} 
+        />
       ) : (
         <RoundsTable
           players={orderedPlayers}
@@ -268,6 +294,17 @@ export default function Game() {
         <AddPlayerModal
           onAdd={handleAddPlayer}
           onDismiss={() => setShowAddPlayer(false)}
+        />
+      )}
+
+      {selectedPlayerForScore && (
+        <QuickScoreModal
+          player={selectedPlayerForScore}
+          initialFormula={
+             activeRound ? scoresByRound[activeRound.id]?.[selectedPlayerForScore.id]?.formula : ""
+          }
+          onSave={handleQuickScore}
+          onDismiss={() => setSelectedPlayerForScore(null)}
         />
       )}
     </div>
