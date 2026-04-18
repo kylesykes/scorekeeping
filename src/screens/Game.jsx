@@ -126,13 +126,14 @@ export default function Game() {
     const gameName = session?.game_name || "Game";
     const maxScore = Math.max(...players.map((p) => totals[p.id] ?? 0));
 
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    const playDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+
     const playData = {
       sourceName: "NerdScore",
       sourcePlayId: code,
-      playDate: new Date()
-        .toISOString()
-        .replace("T", " ")
-        .replace(/\.\d{3}Z$/, ""),
+      playDate,
       durationMin: 0,
       game: {
         name: gameName,
