@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useMemo } from "react";
 import styles from "./Leaderboard.module.css";
 
-export default function Leaderboard({ players, totals, scoresByPlayer, maxEntries, onSelectPlayer }) {
+export default function Leaderboard({ players, totals, scoresByPlayer, maxEntries, onSelectPlayer, onAddPlayer }) {
   const roundCount = Math.max(maxEntries ?? 0, 1);
 
   // Trend arrows compare current rank to rank-if-we-excluded-each-player's-last-entry.
@@ -37,6 +37,18 @@ export default function Leaderboard({ players, totals, scoresByPlayer, maxEntrie
     if (currentRank > prevRank) return "down";
     return null;
   };
+
+  if (players.length === 0) {
+    return (
+      <div className={styles.empty}>
+        <p className={styles.emptyTitle}>No players yet</p>
+        <p className={styles.emptyHint}>Add a player to start scoring.</p>
+        <button className={styles.emptyBtn} onClick={onAddPlayer}>
+          + Add Player
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.list}>

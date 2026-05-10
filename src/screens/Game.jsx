@@ -200,6 +200,12 @@ export default function Game() {
           </p>
         </div>
         <div className={styles.headerActions}>
+          <button
+            className={styles.headerBtn}
+            onClick={() => setShowAddPlayer(true)}
+          >
+            + Player
+          </button>
           <div className={styles.menuWrapper}>
             <button
               className={styles.headerBtn}
@@ -223,15 +229,6 @@ export default function Game() {
                     }}
                   >
                     Share
-                  </button>
-                  <button
-                    className={styles.menuItem}
-                    onClick={() => {
-                      setShowAddPlayer(true);
-                      setShowMenu(false);
-                    }}
-                  >
-                    Add Player
                   </button>
                   <button
                     className={styles.menuItem}
@@ -271,6 +268,7 @@ export default function Game() {
           scoresByPlayer={scoresByPlayer}
           maxEntries={maxEntries}
           onSelectPlayer={setSelectedPlayerForScore}
+          onAddPlayer={() => setShowAddPlayer(true)}
         />
       ) : (
         <RoundsTable

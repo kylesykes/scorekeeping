@@ -88,3 +88,36 @@
   color: var(--color-text, #111);
   flex-shrink: 0;
 }
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 3rem 1rem;
+  gap: 0.25rem;
+}
+
+.emptyTitle {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--color-text, #111);
+  margin: 0;
+}
+
+.emptyHint {
+  font-size: 0.875rem;
+  color: var(--color-text-muted, #888);
+  margin: 0 0 1.25rem;
+}
+
+.emptyBtn {
+  padding: 0.625rem 1.25rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  border-radius: 10px;
+  border: none;
+  background: var(--color-primary, #5b6cff);
+  color: #fff;
+  cursor: pointer;
+}
