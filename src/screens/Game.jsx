@@ -32,7 +32,6 @@ export default function Game() {
   const [showAddPlayer, setShowAddPlayer] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [draftName, setDraftName] = useState("");
-  const [showMenu, setShowMenu] = useState(false);
   const [selectedPlayerForScore, setSelectedPlayerForScore] = useState(null);
 
   const handleQuickSave = async ({ mode, scoreId, score, formula }) => {
@@ -204,43 +203,12 @@ export default function Game() {
           >
             + Player
           </button>
-          <div className={styles.menuWrapper}>
-            <button
-              className={styles.headerBtn}
-              onClick={() => setShowMenu((v) => !v)}
-              aria-label="Menu"
-            >
-              ☰
-            </button>
-            {showMenu && (
-              <>
-                <div
-                  className={styles.menuBackdrop}
-                  onClick={() => setShowMenu(false)}
-                />
-                <div className={styles.menu}>
-                  <button
-                    className={styles.menuItem}
-                    onClick={() => {
-                      setShowShare(true);
-                      setShowMenu(false);
-                    }}
-                  >
-                    Share
-                  </button>
-                  <button
-                    className={styles.menuItem}
-                    onClick={() => {
-                      handleExportBGStats();
-                      setShowMenu(false);
-                    }}
-                  >
-                    Export to BGStats
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+          <button
+            className={styles.headerBtn}
+            onClick={() => setShowShare(true)}
+          >
+            Share
+          </button>
         </div>
       </header>
 
@@ -283,7 +251,11 @@ export default function Game() {
       )}
 
       {showShare && (
-        <ShareModal code={code} onDismiss={() => setShowShare(false)} />
+        <ShareModal
+          code={code}
+          onDismiss={() => setShowShare(false)}
+          onExport={handleExportBGStats}
+        />
       )}
 
       {showAddPlayer && (

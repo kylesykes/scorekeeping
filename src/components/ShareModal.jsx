@@ -2,7 +2,7 @@ import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import styles from "./ShareModal.module.css";
 
-export default function ShareModal({ code, onDismiss }) {
+export default function ShareModal({ code, onDismiss, onExport }) {
   const [copied, setCopied] = useState(false);
 
   const url = `${window.location.origin}/${code}`;
@@ -60,6 +60,11 @@ export default function ShareModal({ code, onDismiss }) {
         <button className={styles.dismissBtn} onClick={onDismiss}>
           Got it
         </button>
+        {onExport && (
+          <button className={styles.exportLink} onClick={onExport}>
+            Export to BGStats
+          </button>
+        )}
       </div>
     </div>
   );

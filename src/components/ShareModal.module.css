@@ -86,3 +86,19 @@
   color: var(--color-bg, #111);
   cursor: pointer;
 }
+
+.exportLink {
+  display: block;
+  margin: 0.75rem auto 0;
+  padding: 0.25rem 0.5rem;
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #888);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.exportLink:hover {
+  color: var(--color-text, #fff);
+}
