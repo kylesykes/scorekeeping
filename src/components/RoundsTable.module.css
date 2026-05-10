@@ -168,23 +168,6 @@
   white-space: nowrap;
 }
 
-/* Totals row */
-.totalsRow td {
-  border-bottom: 2px solid var(--color-border, rgba(255, 255, 255, 0.15));
-  padding-bottom: 0.5rem;
-}
-
-.totalCell {
-  font-family: monospace;
-  font-weight: 600;
-  font-size: 1rem;
-  color: var(--color-text, #fff);
-}
-
-.leaderTotal {
-  color: rgb(245, 180, 50);
-}
-
 /* Score cells */
 .scoreCell {
   padding: 0.25rem !important;

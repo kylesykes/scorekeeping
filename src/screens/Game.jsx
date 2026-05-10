@@ -195,9 +195,7 @@ export default function Game() {
               {session?.game_name || "Game"}
             </h1>
           )}
-          <p className={styles.meta}>
-            {code} · {maxEntries} round{maxEntries !== 1 ? "s" : ""}
-          </p>
+          <p className={styles.meta}>{code}</p>
         </div>
         <div className={styles.headerActions}>
           <button
@@ -257,7 +255,7 @@ export default function Game() {
           className={`${styles.tab} ${tab === "rounds" ? styles.tabActive : ""}`}
           onClick={() => setTab("rounds")}
         >
-          Rounds
+          Scores
         </button>
       </div>
 

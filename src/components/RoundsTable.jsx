@@ -53,10 +53,9 @@ export default function RoundsTable({
     prevScoresRef.current = scoresByPlayer;
   }, [scoresByPlayer, deviceId]);
 
-  // Row indices ordered newest-first: [maxEntries-1, ..., 1, 0]
   const rowIndices = useMemo(() => {
     const arr = [];
-    for (let i = maxEntries - 1; i >= 0; i--) arr.push(i);
+    for (let i = 0; i < maxEntries; i++) arr.push(i);
     return arr;
   }, [maxEntries]);
 
@@ -163,18 +162,9 @@ export default function RoundsTable({
           </tr>
         </thead>
         <tbody>
-          <tr className={styles.totalsRow}>
-            <td className={styles.roundLabel}>Total</td>
-            {players.map((p) => (
-              <td key={p.id} className={`${styles.totalCell} ${leaderIds.has(p.id) ? styles.leaderTotal : ""}`}>
-                {totals[p.id] ?? 0}
-              </td>
-            ))}
-          </tr>
-
           {rowIndices.map((idx) => (
             <tr key={idx} className={styles.roundRow}>
-              <td className={styles.roundLabel}>R{idx + 1}</td>
+              <td className={styles.roundLabel}>{idx + 1}</td>
               {players.map((p) => {
                 const stream = scoresByPlayer[p.id] ?? [];
                 const entry = stream[idx];
