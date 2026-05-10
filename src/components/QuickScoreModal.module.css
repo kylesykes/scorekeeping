@@ -37,6 +37,82 @@
   margin-bottom: 1rem;
 }
 
+.modeUndo {
+  margin-left: auto;
+  border: none;
+  background: none;
+  color: var(--color-accent, #9c8efb);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+}
+
+.lastEntryWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-bottom: 1rem;
+}
+
+.lastEntryLabel {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--color-text-muted, #888);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.lastEntryChip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--color-border, rgba(255, 255, 255, 0.15));
+  border-radius: 10px;
+  background: var(--color-surface-hover, rgba(255, 255, 255, 0.04));
+  color: var(--color-text, #fff);
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.lastEntryChip:hover {
+  border-color: var(--color-accent, #7c6ef0);
+}
+
+.lastEntryChipActive {
+  border-color: var(--color-accent, #7c6ef0);
+  background: rgba(124, 110, 240, 0.12);
+  cursor: default;
+}
+
+.lastEntryValue {
+  font-family: monospace;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.lastEntryEditHint {
+  font-size: 0.6875rem;
+  color: var(--color-text-muted, #888);
+}
+
+.lastEntryDelete {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: #f66;
+  background: rgba(255, 80, 80, 0.12);
+  padding: 0.25rem 0.5rem;
+  border-radius: 5px;
+}
+
+.lastEntryDelete:hover {
+  background: rgba(255, 80, 80, 0.22);
+}
+
 .avatar {
   width: 2rem;
   height: 2rem;

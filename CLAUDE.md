@@ -39,13 +39,13 @@ src/
 │   └── Game.jsx      # Main game screen: leaderboard + rounds table
 ├── components/       # Reusable UI components
 │   ├── Leaderboard.jsx   # Ranked player list sorted by total score
-│   ├── RoundsTable.jsx   # Editable score grid (players × rounds)
+│   ├── RoundsTable.jsx   # Editable score grid (players × entries, grid-by-index)
 │   ├── PlayerRow.jsx     # Single player row in the rounds table
 │   └── ShareModal.jsx    # QR code + share link modal
 ├── hooks/            # Custom React hooks (all app logic lives here)
 │   ├── useIdentity.js    # Device UUID + player name in localStorage
 │   ├── useSession.js     # Create/join sessions, live player list
-│   └── useRounds.js      # Rounds, scores, totals, realtime sync
+│   └── useScores.js      # Per-player score streams, totals, realtime sync
 ├── lib/
 │   ├── supabase.js       # Supabase client init
 │   └── colors.js         # Player color assignment
@@ -59,9 +59,8 @@ supabase/
 
 - **Session:** A game identified by a 4-char alphanumeric code (e.g. `K7QM`). Generated server-side to avoid collisions. Expires after 24h.
 - **Player:** Tied to a session. Has a `device_id` (for real devices) or `null` (for manually-added players at the table who don't have the app open).
-- **Round:** Sequential numbered rounds within a session. Created via an RPC function to prevent race conditions.
-- **Score:** One score per player per round. Upserted (insert or update on conflict).
-- **Realtime:** Players, rounds, and scores tables all publish changes via Supabase Realtime. Hooks subscribe and re-fetch on any change.
+- **Score:** Per-player append-only entries ordered by `entered_at`. No shared "round" object — a player's Nth entry is simply their Nth score by time. The rounds table visualizes this as a grid-by-index: row N = each player's Nth entry (or `—` if they have fewer).
+- **Realtime:** Players and scores tables publish changes via Supabase Realtime. Hooks subscribe and re-fetch on any change.
 
 ## Routes
 
@@ -75,11 +74,12 @@ supabase/
 2. `?new=1` triggers the ShareModal so the host can share the code/QR
 3. Other players join via code entry on landing or by opening the share link directly
 4. Game screen auto-joins the player if they have a name + device ID
-5. All data changes (new players, scores, rounds) propagate via Supabase Realtime channels
+5. All data changes (new players, scores) propagate via Supabase Realtime channels
 
 ## Design decisions
 
 - **No auth:** Intentionally frictionless. Identity is just a localStorage UUID. Acceptable for a casual game night tool. RLS is permissive (anon can read/write all active sessions). Should be tightened if the app sees real traction.
 - **Re-fetch on change:** Realtime handlers re-fetch the full list rather than diffing individual changes. Simpler and reliable for small datasets.
 - **Player ordering:** Persisted per-session in localStorage. Players can be reordered via arrows in the column dropdown.
-- **Optimistic updates:** Deletes (rounds, players) are applied to local state immediately, with a fallback re-fetch on failure.
+- **Optimistic updates:** Appends, edits, and deletes are applied to local state immediately, with a fallback re-fetch on failure.
+- **Per-player streams, not shared rounds:** Score entry always appends to the tapped player's stream. Editing/deleting targets a specific score id. This avoids "two people created round N at the same time" and "the leaderboard silently overwrote my earlier round" footguns. The Rounds tab is a read/edit surface over those streams.

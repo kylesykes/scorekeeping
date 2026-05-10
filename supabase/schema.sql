@@ -26,55 +26,18 @@ create index idx_players_session on players(session_code);
 create unique index idx_players_device_session on players(session_code, device_id)
   where device_id is not null;             -- one entry per device per session
 
-create table rounds (
+create table scores (
   id            uuid primary key default gen_random_uuid(),
   session_code  text not null references sessions(code) on delete cascade,
-  round_number  integer not null,
-  status        text not null default 'open' check (status in ('open', 'complete')),
-  created_at    timestamptz not null default now(),
-  unique(session_code, round_number)
+  player_id     uuid not null references players(id) on delete cascade,
+  score         integer not null,
+  formula       text,                        -- optional math formula user typed
+  entered_by    text,                        -- device_id of who entered this score
+  entered_at    timestamptz not null default now()
 );
 
-create index idx_rounds_session on rounds(session_code);
-
-create table scores (
-  id          uuid primary key default gen_random_uuid(),
-  round_id    uuid not null references rounds(id) on delete cascade,
-  player_id   uuid not null references players(id) on delete cascade,
-  score       integer not null,
-  formula     text,                        -- optional math formula user typed
-  entered_by  text,                        -- device_id of who entered this score
-  entered_at  timestamptz not null default now(),
-  unique(round_id, player_id)
-);
-
-create index idx_scores_round on scores(round_id);
-
--- =============================================================
--- RPC: create a new round with the next round_number
--- Prevents race conditions when two people tap "New round" at once
--- =============================================================
-
-create or replace function create_round(p_session_code text)
-returns rounds
-language plpgsql
-as $$
-declare
-  v_next integer;
-  v_round rounds;
-begin
-  select coalesce(max(round_number), 0) + 1
-    into v_next
-    from rounds
-   where session_code = p_session_code;
-
-  insert into rounds (session_code, round_number)
-  values (p_session_code, v_next)
-  returning * into v_round;
-
-  return v_round;
-end;
-$$;
+create index idx_scores_session on scores(session_code);
+create index idx_scores_player on scores(player_id, entered_at);
 
 -- =============================================================
 -- RPC: generate a unique 4-char session code
@@ -112,7 +75,7 @@ $$;
 -- =============================================================
 -- Scheduled cleanup: delete expired sessions every hour
 -- Requires pg_cron extension (enable via Supabase dashboard first)
--- Cascading FKs automatically clean up players, rounds, and scores
+-- Cascading FKs automatically clean up players and scores
 -- =============================================================
 
 select cron.schedule(
@@ -126,7 +89,6 @@ select cron.schedule(
 -- =============================================================
 
 alter publication supabase_realtime add table players;
-alter publication supabase_realtime add table rounds;
 alter publication supabase_realtime add table scores;
 
 -- =============================================================
@@ -139,11 +101,9 @@ alter publication supabase_realtime add table scores;
 
 alter table sessions enable row level security;
 alter table players enable row level security;
-alter table rounds enable row level security;
 alter table scores enable row level security;
 
 -- Allow all operations for anon users (v1 - no auth)
 create policy "anon_all_sessions" on sessions for all using (true) with check (true);
 create policy "anon_all_players"  on players  for all using (true) with check (true);
-create policy "anon_all_rounds"   on rounds   for all using (true) with check (true);
 create policy "anon_all_scores"   on scores   for all using (true) with check (true);

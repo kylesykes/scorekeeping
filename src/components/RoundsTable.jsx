@@ -1,108 +1,87 @@
-import { useState, useCallback, useRef, useEffect } from "react";
-import { evaluateMath } from "../lib/math";
+import { useState, useRef, useEffect, useMemo } from "react";
 import MathKeypad from "./MathKeypad";
 import styles from "./RoundsTable.module.css";
 
 export default function RoundsTable({
   players,
-  rounds,
-  scoresByRound,
+  scoresByPlayer,
   totals,
-  onScore,
-  onDeleteRound,
+  maxEntries,
+  onUpdateScore,
+  onDeleteScore,
   onRemovePlayer,
   onMovePlayer,
   deviceId,
 }) {
-  // Local input state keyed by `${roundId}-${playerId}`
-  const [inputs, setInputs] = useState({});
-  const [confirmingDelete, setConfirmingDelete] = useState(null);
-  const [playerMenu, setPlayerMenu] = useState(null); // player id
-  const [focusedCell, setFocusedCell] = useState(null);
+  const [playerMenu, setPlayerMenu] = useState(null);
+  const [focusedScore, setFocusedScore] = useState(null); // { id, playerId, score, formula }
+  const [keypadValue, setKeypadValue] = useState("");
   const [changedCells, setChangedCells] = useState({});
-  const prevScoresRef = useRef(scoresByRound);
+  const prevScoresRef = useRef(scoresByPlayer);
 
+  // Highlight cells that were updated remotely
   useEffect(() => {
     const prev = prevScoresRef.current;
-    let newChanges = {};
+    const newChanges = {};
     let hasChanges = false;
-    for (const rid in scoresByRound) {
-      for (const pid in scoresByRound[rid]) {
-        const after = scoresByRound[rid][pid];
-        const before = prev[rid]?.[pid];
-        if (after && before && after.score !== before.score && after.entered_by !== deviceId) {
-           newChanges[`${rid}-${pid}`] = Date.now();
-           hasChanges = true;
-        } else if (after && !before && after.entered_by !== deviceId) {
-           newChanges[`${rid}-${pid}`] = Date.now();
-           hasChanges = true;
+    for (const pid in scoresByPlayer) {
+      const prevStream = prev[pid] ?? [];
+      const prevById = new Map(prevStream.map((s) => [s.id, s]));
+      for (const s of scoresByPlayer[pid]) {
+        if (s.entered_by === deviceId) continue;
+        const before = prevById.get(s.id);
+        if (!before) {
+          newChanges[s.id] = Date.now();
+          hasChanges = true;
+        } else if (before.score !== s.score) {
+          newChanges[s.id] = Date.now();
+          hasChanges = true;
         }
       }
     }
-    
+
     if (hasChanges) {
-      setChangedCells(c => ({...c, ...newChanges}));
+      setChangedCells((c) => ({ ...c, ...newChanges }));
       setTimeout(() => {
-        setChangedCells(c => {
-           let next = {...c};
-           for (let k in newChanges) delete next[k];
-           return next;
+        setChangedCells((c) => {
+          const next = { ...c };
+          for (const k in newChanges) delete next[k];
+          return next;
         });
       }, 2000);
     }
-    prevScoresRef.current = scoresByRound;
-  }, [scoresByRound, deviceId]);
+    prevScoresRef.current = scoresByPlayer;
+  }, [scoresByPlayer, deviceId]);
 
-  const cellKey = (roundId, playerId) => `${roundId}-${playerId}`;
+  // Row indices ordered newest-first: [maxEntries-1, ..., 1, 0]
+  const rowIndices = useMemo(() => {
+    const arr = [];
+    for (let i = maxEntries - 1; i >= 0; i--) arr.push(i);
+    return arr;
+  }, [maxEntries]);
 
-  const getDisplayValue = (roundId, playerId) => {
-    const saved = scoresByRound[roundId]?.[playerId];
-    return saved?.score !== undefined ? String(saved.score) : "";
-  };
-
-  const openKeypad = (roundId, playerId) => {
-    const saved = scoresByRound[roundId]?.[playerId];
-    const initial = saved?.formula || (saved?.score !== undefined ? String(saved.score) : "");
-    setFocusedCell({ roundId, playerId });
-    setInputs((prev) => ({ ...prev, [cellKey(roundId, playerId)]: initial }));
-  };
-
-  const handleKeypadChange = (newVal) => {
-    if (!focusedCell) return;
-    setInputs((prev) => ({ ...prev, [cellKey(focusedCell.roundId, focusedCell.playerId)]: newVal }));
+  const openKeypad = (scoreObj) => {
+    setFocusedScore(scoreObj);
+    setKeypadValue(scoreObj.formula || String(scoreObj.score));
   };
 
   const handleKeypadSubmit = (formula, score) => {
-    if (!focusedCell) return;
-    onScore({ roundId: focusedCell.roundId, playerId: focusedCell.playerId, score, formula, deviceId });
-    setInputs((prev) => {
-      const next = { ...prev };
-      delete next[cellKey(focusedCell.roundId, focusedCell.playerId)];
-      return next;
-    });
-    setFocusedCell(null);
+    if (!focusedScore) return;
+    onUpdateScore({ scoreId: focusedScore.id, score, formula, deviceId });
+    setFocusedScore(null);
+    setKeypadValue("");
   };
 
   const handleKeypadCancel = () => {
-    if (focusedCell) {
-      setInputs((prev) => {
-        const next = { ...prev };
-        delete next[cellKey(focusedCell.roundId, focusedCell.playerId)];
-        return next;
-      });
-    }
-    setFocusedCell(null);
+    setFocusedScore(null);
+    setKeypadValue("");
   };
 
-  const hasScores = (roundId) =>
-    scoresByRound[roundId] && Object.keys(scoresByRound[roundId]).length > 0;
-
-  const handleDeleteRound = (roundId) => {
-    if (hasScores(roundId)) {
-      setConfirmingDelete(roundId);
-    } else {
-      onDeleteRound(roundId);
-    }
+  const handleKeypadDelete = () => {
+    if (!focusedScore) return;
+    onDeleteScore(focusedScore.id);
+    setFocusedScore(null);
+    setKeypadValue("");
   };
 
   const handleRemovePlayer = (playerId) => {
@@ -110,7 +89,6 @@ export default function RoundsTable({
     setPlayerMenu(null);
   };
 
-  // Determine leaders (highest total, only if there are scores)
   const leaderIds = (() => {
     const entries = Object.entries(totals);
     if (entries.length === 0) return new Set();
@@ -119,12 +97,11 @@ export default function RoundsTable({
     return new Set(entries.filter(([, v]) => v === max).map(([id]) => id));
   })();
 
-  // Show newest rounds first
-  const sortedRounds = [...rounds].reverse();
-
-  if (rounds.length === 0) {
+  if (maxEntries === 0) {
     return (
-      <p className={styles.empty}>No rounds yet. Tap "+ Round" to get started.</p>
+      <p className={styles.empty}>
+        No scores yet. Tap a player on the leaderboard to add one.
+      </p>
     );
   }
 
@@ -138,9 +115,7 @@ export default function RoundsTable({
               <th key={p.id} className={`${styles.playerCol} ${leaderIds.has(p.id) ? styles.leaderCol : ""}`}>
                 <button
                   className={styles.playerColBtn}
-                  onClick={() =>
-                    setPlayerMenu(playerMenu === p.id ? null : p.id)
-                  }
+                  onClick={() => setPlayerMenu(playerMenu === p.id ? null : p.id)}
                 >
                   <div
                     className={styles.avatar}
@@ -185,11 +160,9 @@ export default function RoundsTable({
                 )}
               </th>
             ))}
-            <th className={styles.actionCol}></th>
           </tr>
         </thead>
         <tbody>
-          {/* Totals row */}
           <tr className={styles.totalsRow}>
             <td className={styles.roundLabel}>Total</td>
             {players.map((p) => (
@@ -197,69 +170,48 @@ export default function RoundsTable({
                 {totals[p.id] ?? 0}
               </td>
             ))}
-            <td></td>
           </tr>
 
-          {/* Round rows — newest first, display number from position */}
-          {sortedRounds.map((round, idx) => (
-            <tr key={round.id} className={styles.roundRow}>
-              <td className={styles.roundLabel}>R{rounds.length - idx}</td>
-              {players.map((p) => (
-                <td
-                  key={p.id}
-                  className={`${styles.scoreCell} ${changedCells[cellKey(round.id, p.id)] ? styles.remoteUpdateHighlight : ""}`}
-                  onClick={() => openKeypad(round.id, p.id)}
-                >
-                  <div className={styles.scoreInput}>
-                    {getDisplayValue(round.id, p.id) || <span className={styles.scorePlaceholder}>—</span>}
-                  </div>
-                </td>
-              ))}
-              <td className={styles.actionCell}>
-                <button
-                  className={styles.deleteBtn}
-                  onClick={() => handleDeleteRound(round.id)}
-                  aria-label={`Delete round ${rounds.length - idx}`}
-                >
-                  &times;
-                </button>
-              </td>
+          {rowIndices.map((idx) => (
+            <tr key={idx} className={styles.roundRow}>
+              <td className={styles.roundLabel}>R{idx + 1}</td>
+              {players.map((p) => {
+                const stream = scoresByPlayer[p.id] ?? [];
+                const entry = stream[idx];
+                const highlight = entry && changedCells[entry.id];
+                return (
+                  <td
+                    key={p.id}
+                    className={`${styles.scoreCell} ${highlight ? styles.remoteUpdateHighlight : ""}`}
+                    onClick={() => entry && openKeypad({ ...entry, playerId: p.id })}
+                  >
+                    <div className={styles.scoreInput}>
+                      {entry ? entry.score : <span className={styles.scorePlaceholder}>—</span>}
+                    </div>
+                  </td>
+                );
+              })}
             </tr>
           ))}
         </tbody>
       </table>
 
-      {confirmingDelete && (
-        <div className={styles.confirmOverlay}>
-          <div className={styles.confirmDialog}>
-            <p>This round has scores. Delete everything?</p>
-            <div className={styles.confirmActions}>
+      {focusedScore && (
+        <div className={styles.keypadOverlay} onClick={handleKeypadCancel}>
+          <div className={styles.keypadSheet} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.keypadHeader}>
+              <span className={styles.keypadEditLabel}>Editing entry</span>
               <button
-                className={styles.confirmCancel}
-                onClick={() => setConfirmingDelete(null)}
-              >
-                Cancel
-              </button>
-              <button
-                className={styles.confirmDelete}
-                onClick={() => {
-                  onDeleteRound(confirmingDelete);
-                  setConfirmingDelete(null);
-                }}
+                className={styles.keypadDeleteBtn}
+                onClick={handleKeypadDelete}
+                aria-label="Delete entry"
               >
                 Delete
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {focusedCell && (
-        <div className={styles.keypadOverlay} onClick={handleKeypadCancel}>
-          <div className={styles.keypadSheet} onClick={(e) => e.stopPropagation()}>
             <MathKeypad
-              value={inputs[cellKey(focusedCell.roundId, focusedCell.playerId)] || ""}
-              onChange={handleKeypadChange}
+              value={keypadValue}
+              onChange={setKeypadValue}
               onSubmit={handleKeypadSubmit}
               onCancel={handleKeypadCancel}
             />

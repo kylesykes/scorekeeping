@@ -2,42 +2,33 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useMemo } from "react";
 import styles from "./Leaderboard.module.css";
 
-export default function Leaderboard({ players, totals, rounds, scoresByRound, activeRound, onSelectPlayer }) {
-  const roundCount = rounds.length || 1;
+export default function Leaderboard({ players, totals, scoresByPlayer, maxEntries, onSelectPlayer }) {
+  const roundCount = Math.max(maxEntries ?? 0, 1);
 
+  // Trend arrows compare current rank to rank-if-we-excluded-each-player's-last-entry.
+  // This is the per-player-stream analog of "before the current round."
   const prevRanks = useMemo(() => {
-    if (!scoresByRound) return {};
+    if (!scoresByPlayer) return {};
 
-    // 1. Calculate previous totals excluding the active round
     const prevTotals = {};
-    players.forEach(p => prevTotals[p.id] = 0);
-
-    rounds.forEach(round => {
-      // Ignore the currently active/open round so we are getting the "previous" state
-      if (activeRound && round.id === activeRound.id) return;
-      
-      const roundScores = scoresByRound[round.id] || {};
-      for (const [playerId, cell] of Object.entries(roundScores)) {
-        if (cell && cell.score !== undefined) {
-          prevTotals[playerId] = (prevTotals[playerId] || 0) + cell.score;
-        }
-      }
+    players.forEach((p) => {
+      const stream = scoresByPlayer[p.id] ?? [];
+      const withoutLast = stream.slice(0, -1);
+      prevTotals[p.id] = withoutLast.reduce((sum, s) => sum + s.score, 0);
     });
 
-    // 2. Sort players based on these previous totals
     const prevRanked = [...players].sort((a, b) => {
       const diff = (prevTotals[b.id] || 0) - (prevTotals[a.id] || 0);
       if (diff !== 0) return diff;
       return a.name.localeCompare(b.name);
     });
 
-    // 3. Map players to their previous rank index
     const ranksMap = {};
     prevRanked.forEach((p, i) => {
       ranksMap[p.id] = i;
     });
     return ranksMap;
-  }, [players, rounds, scoresByRound, activeRound]);
+  }, [players, scoresByPlayer]);
 
   const getTrend = (playerId, currentRank) => {
     const prevRank = prevRanks[playerId];
@@ -46,7 +37,6 @@ export default function Leaderboard({ players, totals, rounds, scoresByRound, ac
     if (currentRank > prevRank) return "down";
     return null;
   };
-
 
   return (
     <div className={styles.list}>

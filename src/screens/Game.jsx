@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useIdentity } from "../hooks/useIdentity";
 import { useSession } from "../hooks/useSession";
-import { useRounds } from "../hooks/useRounds";
+import { useScores } from "../hooks/useScores";
 import Leaderboard from "../components/Leaderboard";
 import RoundsTable from "../components/RoundsTable";
 import ShareModal from "../components/ShareModal";
@@ -19,14 +19,13 @@ export default function Game() {
   const { session, players, addPlayer, removePlayer, updateGameName } =
     useSession(code);
   const {
-    rounds,
+    scoresByPlayer,
     totals,
-    scoresByRound,
-    activeRound,
-    createRound,
-    upsertScore,
-    deleteRound,
-  } = useRounds(code);
+    maxEntries,
+    appendScore,
+    updateScore,
+    deleteScore,
+  } = useScores(code);
 
   const [tab, setTab] = useState("leaderboard");
   const [showShare, setShowShare] = useState(false);
@@ -36,19 +35,24 @@ export default function Game() {
   const [showMenu, setShowMenu] = useState(false);
   const [selectedPlayerForScore, setSelectedPlayerForScore] = useState(null);
 
-  const handleQuickScore = async (formula, score) => {
-    let roundInfo = activeRound;
-    if (!roundInfo) {
-      if (rounds.length > 0 && rounds[0].status === "open") {
-        roundInfo = rounds[0];
-      } else {
-        roundInfo = await createRound();
-      }
+  const handleQuickSave = async ({ mode, scoreId, score, formula }) => {
+    if (!selectedPlayerForScore) return;
+    if (mode === "edit" && scoreId) {
+      await updateScore({ scoreId, score, formula, deviceId });
+    } else {
+      await appendScore({
+        playerId: selectedPlayerForScore.id,
+        score,
+        formula,
+        deviceId,
+      });
     }
-    
-    if (roundInfo && selectedPlayerForScore) {
-       await upsertScore({ roundId: roundInfo.id, playerId: selectedPlayerForScore.id, score, formula, deviceId });
-    }
+    setSelectedPlayerForScore(null);
+  };
+
+  const handleQuickDelete = async (scoreId) => {
+    if (!scoreId) return;
+    await deleteScore(scoreId);
     setSelectedPlayerForScore(null);
   };
 
@@ -70,21 +74,18 @@ export default function Game() {
     }
   });
 
-  // Sync order to localStorage
   useEffect(() => {
     if (playerOrder.length > 0) {
       localStorage.setItem(orderKey, JSON.stringify(playerOrder));
     }
   }, [playerOrder, orderKey]);
 
-  // Ordered players: use saved order, append any new players at the end
   const orderedPlayers = useMemo(() => {
     if (playerOrder.length === 0) return players;
     const byId = new Map(players.map((p) => [p.id, p]));
     const ordered = playerOrder
       .filter((id) => byId.has(id))
       .map((id) => byId.get(id));
-    // Append players not in the saved order
     const inOrder = new Set(playerOrder);
     for (const p of players) {
       if (!inOrder.has(p.id)) ordered.push(p);
@@ -106,16 +107,10 @@ export default function Game() {
     [orderedPlayers]
   );
 
-  const handleNewRound = async () => {
-    await createRound();
-    setTab("rounds");
-  };
-
   const handleAddPlayer = async (playerName) => {
     await addPlayer(playerName);
   };
 
-  // Sort players by total score descending for leaderboard
   const ranked = [...players].sort((a, b) => {
     const diff = (totals[b.id] ?? 0) - (totals[a.id] ?? 0);
     if (diff !== 0) return diff;
@@ -158,6 +153,12 @@ export default function Game() {
     window.open(url, "_blank");
   };
 
+  const selectedPlayerLastEntry = useMemo(() => {
+    if (!selectedPlayerForScore) return null;
+    const stream = scoresByPlayer[selectedPlayerForScore.id] ?? [];
+    return stream.length > 0 ? stream[stream.length - 1] : null;
+  }, [selectedPlayerForScore, scoresByPlayer]);
+
   return (
     <div className={styles.container}>
       <header className={styles.header}>
@@ -195,13 +196,10 @@ export default function Game() {
             </h1>
           )}
           <p className={styles.meta}>
-            {code} · {rounds.length} round{rounds.length !== 1 ? "s" : ""}
+            {code} · {maxEntries} round{maxEntries !== 1 ? "s" : ""}
           </p>
         </div>
         <div className={styles.headerActions}>
-          <button className={styles.headerBtn} onClick={handleNewRound}>
-            + Round
-          </button>
           <div className={styles.menuWrapper}>
             <button
               className={styles.headerBtn}
@@ -267,22 +265,21 @@ export default function Game() {
       </div>
 
       {tab === "leaderboard" ? (
-        <Leaderboard 
-          players={ranked} 
-          totals={totals} 
-          rounds={rounds} 
-          scoresByRound={scoresByRound}
-          activeRound={activeRound}
-          onSelectPlayer={setSelectedPlayerForScore} 
+        <Leaderboard
+          players={ranked}
+          totals={totals}
+          scoresByPlayer={scoresByPlayer}
+          maxEntries={maxEntries}
+          onSelectPlayer={setSelectedPlayerForScore}
         />
       ) : (
         <RoundsTable
           players={orderedPlayers}
-          rounds={rounds}
-          scoresByRound={scoresByRound}
+          scoresByPlayer={scoresByPlayer}
           totals={totals}
-          onScore={upsertScore}
-          onDeleteRound={deleteRound}
+          maxEntries={maxEntries}
+          onUpdateScore={updateScore}
+          onDeleteScore={deleteScore}
           onRemovePlayer={removePlayer}
           onMovePlayer={handleMovePlayer}
           deviceId={deviceId}
@@ -303,10 +300,9 @@ export default function Game() {
       {selectedPlayerForScore && (
         <QuickScoreModal
           player={selectedPlayerForScore}
-          initialFormula={
-             activeRound ? scoresByRound[activeRound.id]?.[selectedPlayerForScore.id]?.formula : ""
-          }
-          onSave={handleQuickScore}
+          lastEntry={selectedPlayerLastEntry}
+          onSave={handleQuickSave}
+          onDelete={handleQuickDelete}
           onDismiss={() => setSelectedPlayerForScore(null)}
         />
       )}
